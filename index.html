@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Minesweeper</title>
+  <style>
+    body {
+      width: 100%;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #newGame {
+      display: block;
+      margin: auto;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div id="game">
+    </div>
+    <button id="newGame">New Game</button>
+  </div>
+  <script>
+    const size = 20;
+    const game = document.querySelector("#game");
+    const table = document.createElement("table");
+    let game_over = false;
+    document.querySelector("#newGame").addEventListener("click", init_board);
+
+    let board = new Array(size * size);
+    let buttons = new Array(size * size);
+
+
+    for (let i = 0; i < size; ++i) {
+      const tr = document.createElement("tr");
+
+      for (let j = 0; j < size; ++j) {
+        const td = document.createElement("td");
+        td.width = 30;
+        td.height = 30;
+        td.style.border = "solid 1px grey";
+        td.style.padding = 0;
+        const button = document.createElement("button");
+        buttons[i * size + j] = button;
+        button.addEventListener("mouseup", (e) => {
+          if (game_over)
+            return;
+          if (e.button == 0)
+            left_click(j, i);
+          else
+            right_click(j, i);
+          if (check_win()) {
+            alert("You have won!");
+            game_over = true;
+          }
+        });
+        button.style.padding = 0;
+        button.style.height = "100%";
+        button.style.width = "100%";
+        td.appendChild(button);
+        tr.appendChild(td);
+      }
+      table.appendChild(tr);
+    }
+    game.appendChild(table);
+
+    const MINE = -1;
+    const MARKED = -2;
+    const OPEN = -3;
+    const mines_count = size * size / 10;
+    init_board();
+
+    function left_click(x, y) {
+      const val = board[y * size + x];
+      if (val == OPEN)
+        return;
+      if (val == MINE) {
+        buttons[y * size + x].innerText = "X";
+        game_over = true;
+        return;
+      }
+      openSquare(x, y);
+    }
+
+    function openSquare(x, y) {
+      if (x < 0 || x >= size || y < 0 || y >= size)
+        return;
+      if (board[y * size + x] == OPEN)
+        return;
+
+      board[y * size + x] = OPEN;
+      buttons[y * size + x].disabled = true;
+      const mines = count_neighboring_mines(x, y);
+      if (mines != 0) {
+        buttons[y * size + x].innerText = mines;
+        return;
+      }
+      openSquare(x + 1, y);
+      openSquare(x + 1, y + 1);
+      openSquare(x + 1, y - 1);
+      openSquare(x, y + 1);
+      openSquare(x, y - 1);
+      openSquare(x - 1, y);
+      openSquare(x - 1, y + 1);
+      openSquare(x - 1, y - 1);
+    }
+
+    function count_neighboring_mines(x, y) {
+      let counter = 0;
+      for (let i = -1; i <= 1; ++i) {
+        for (let j = -1; j <= 1; ++j) {
+          if (x + i < 0 || x + i >= size ||
+            y + j < 0 || y + j >= size)
+            continue;
+          if (board[(y + j) * size + x + i] == MINE)
+            ++counter;
+        }
+      }
+      return counter;
+    }
+
+    function right_click(x, y) {
+      if (board[y * size + x] == OPEN)
+        return;
+      if (board[y * size + x] == MARKED) {
+        buttons[y * size + x].innerText = '';
+        board[y * size + x] = 0;
+      }
+      else {
+        if (board[y * size + x] != MINE)
+          board[y * size + x] = MARKED;
+        buttons[y * size + x].innerText = '&';
+      }
+    }
+
+    function init_board() {
+      game_over = false;
+      for (let i = 0; i < mines_count; ++i) {
+        board[i] = MINE;
+      }
+
+      for (let i = mines_count; i < size * size; ++i) {
+        board[i] = 0;
+      }
+      shuffle_array(board);
+      buttons.forEach(btn => {
+        btn.innerText = '';
+        btn.disabled = false;
+      });
+    }
+
+    function shuffle_array(arr) {
+      for (let i = 0; i < arr.length; ++i) {
+        const random = Math.floor(Math.random() * arr.length);
+        const temp = arr[random];
+        arr[random] = arr[i];
+        arr[i] = temp;
+      }
+    }
+
+    function check_win() {
+      return board.every(sqr => sqr == OPEN || sqr == MINE);
+    }
+
+    document.addEventListener("contextmenu", e => e.preventDefault());
+  </script>
+</body>
+
+</html>
